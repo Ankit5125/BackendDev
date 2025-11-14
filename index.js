@@ -18,3 +18,17 @@ app.get('/about', (req, res) =>{
         author : "Ankit Savaliya"
     })
 })
+
+app.get('/timetable', (req, res) =>{
+    res.json({
+        status : "success",
+        timetable : {
+            "14 Nov" : "IPDC",
+            "17 Nov" : "PDS",
+            "19 Nov" : "SE",
+            "21 Nov" : "CN",
+            "25 Nov" : "PE",
+            "2 Dec" : "ADA",
+        }
+    })
+})
