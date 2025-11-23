@@ -4,6 +4,8 @@ const app = require("./app.js");
 const PORT = process.env.PORT || 3000;
 const DBURL = process.env.DBURL;
 
+try {
+    
 mongoose.connect(`${DBURL}`)
     .then(() => {
         console.log("✅ Database connected");
@@ -14,3 +16,6 @@ mongoose.connect(`${DBURL}`)
     .catch(err => {
         console.error("❌ DB connection failed:", err);
     });
+} catch (error) {
+    console.log("❓ Error " + error)
+}
