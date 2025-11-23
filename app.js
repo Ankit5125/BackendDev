@@ -1,6 +1,7 @@
 const express = require("express");
-const { user } = require('./src/models/todos/user.model');
+const { user } = require('./src/models/todos/user.model.js');
 require('dotenv').config()
+const userRoutes = require("./src/routes/authRouter.js")
 
 const app = express();
 app.use(express.json());
@@ -45,4 +46,5 @@ app.post("/addUser", async (req, res) => {
     }
 });
 
+app.use("/api/auth", userRoutes)
 module.exports = app;
