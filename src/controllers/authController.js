@@ -1,72 +1,115 @@
-import jwt from 'jsonwebtoken';
 import bcrypt from "bcrypt";
 import User from "../models/todos/user.model.js"
+import { generateAccessToken, generateRefreshToken } from '../utils/tokenGenerator.js';
 
-export const registerUser = async (req, res) =>{
-   try {
-    
-    const { email, username, password, number } = req.body
-    if (!email || !username || !password || !number ) {
-        res.status(400).send({
-            status : "failed", 
-            message : "All the Fields are Required"
+export const registerUser = async (req, res) => {
+    try {
+        const { email, username, password, number } = req.body
+        if (!email || !username || !password || !number) {
+            res.status(400).send({
+                status: "failed",
+                message: "All the Fields are Required"
+            })
+        }
+
+        const isUser = await User.findOne({ username })
+
+        if (isUser) {
+            res.status(400).send({
+                status: "failed",
+                message: "User with Username is Already Available"
+            })
+        }
+
+        // created a hashed password
+        const hashedPass = await bcrypt.hash(password, 10)
+
+        // created a access and refresh token
+        const accessToken = generateAccessToken(username)
+        const refreshToken = generateRefreshToken(username)
+
+        console.log("\n\n✅ Password Token : " + hashedPass + "\n✅ Access Token : " + accessToken + "\n✅ Refresh Token : " + refreshToken + "\n\n");
+
+        const user = new User({
+            username,
+            email,
+            number,
+            password: hashedPass,
+            refreshToken: refreshToken
         })
-    }
 
-    const isUser = await User.findOne({username})
+        const savedUser = await user.save()
 
-    if (isUser) {
-        res.status(400).send({
-            status : "failed", 
-            message : "User with Username is Already Available"
-        })
-    }
-
-    const hashedPass = await bcrypt.hash(password, 10)
-    console.log("\n\nPassword Token : " + hashedPass + "\n\n"); 
-
-    const user = new User({
-        username,
-        email, 
-        number, 
-        password : hashedPass,
-    })
-
-    const savedUser = await user.save()
-    res.status(200).send({
-        status : "Success", 
-        message : "User Registered Succesfully", 
-        userDetails : savedUser
-    })
-   } catch (error) {
+        res
+            .cookie("accessToken", accessToken)
+            .cookie("refreshToken", refreshToken)
+            .status(200).
+            send({
+                status: "Success",
+                message: "User Registered Succesfully",
+                userDetails: savedUser,
+                accessToken: accessToken,
+                refreshToken: refreshToken
+            })
+    } catch (error) {
         res.status(500).send({
-            status : "Failed", 
-            message : "Something Went Wrong!!!" + error
+            status: "Failed",
+            message: "Something Went Wrong!!!" + error
         })
-   }
+    }
 }
 
-export const getUsers = async (req, res) =>{
+export const loginUser = async (req, res) => {
     try {
-        
+        const { username, password } = req.body
+        if (!username || !password) {
+            return res.status(400).send({ status: "failed", message: "All fields required" })
+        }
+
+        const user = await User.findOne({ username })
+        if (!user) {
+            return res.status(400).send({ status: "failed", message: "No user found" })
+        }
+
+        const match = await bcrypt.compare(password, user.password)
+        if (!match) {
+            return res.status(400).send({ status: "failure", message: "Wrong Password" })
+        }
+
+        const accessToken = generateAccessToken(username)
+        const refreshToken = user.refreshToken
+
+        return res
+            .cookie("accessToken", accessToken)
+            .cookie("refreshToken", refreshToken)
+            .status(200)
+            .send({ status: "success", message: "User Logged in Successfully" })
+    } catch (error) {
+        return res.status(500).send({ status: "failed", message: "Something went wrong: " + error })
+    }
+}
+
+export const getUsers = async (req, res) => {
+    try {
+
         const users = await User.find().select("-password -number -email -createdAt -updatedAt -__v")
 
         if (!users) {
             res.status(203).send({
-                status : "Success", 
-                message : "No Users Found"
+                status: "Success",
+                message: "No Users Found"
             })
         }
         res.status(200).send({
-            status : "success", 
-            total : users.length,
-            users : users
+            status: "success",
+            total: users.length,
+            users: users
         })
 
     } catch (error) {
         res.status(500).send({
-            status : "Failed", 
-            message : "Something Went Wrong : " + error
+            status: "Failed",
+            message: "Something Went Wrong : " + error
         })
     }
 }

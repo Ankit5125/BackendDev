@@ -20,6 +20,10 @@ let userSchema = new mongoose.Schema({
         required : true,
         unique : true        
     },
+    refreshToken : {
+        type : String, 
+        required : false
+    },
     isActive : {
         type : Boolean, 
         default : false

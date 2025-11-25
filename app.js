@@ -47,4 +47,5 @@ app.post("/addUser", async (req, res) => {
 });
 
 app.use("/api/auth", userRoutes)
+
 module.exports = app;
