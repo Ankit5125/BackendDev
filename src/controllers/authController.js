@@ -85,7 +85,7 @@ export const loginUser = async (req, res) => {
         }
 
         const accessToken = generateAccessToken(username)
-        const refreshToken = user.refreshToken
+        const refreshToken = user.refreshToken == "" ? generateRefreshToken(username) : user.refreshToken
 
         return res
             .cookie("accessToken", accessToken, {
@@ -189,6 +189,49 @@ export const changePassword = async (req, res) => {
         return res.status(400).send({
             status: "failed",
             message: "Something Went Wrong !! : " + error
+        })
+    }
+}
+
+export const logoutUser = async (req, res) => {
+    const accessToken = req.cookies?.accessToken
+    const refreshToken = req.cookies?.refreshToken
+
+    if (!accessToken || !refreshToken) {
+        return res.status(400).send({
+            status: "failed",
+            message: "User not Logged in !!"
+        })
+    }
+
+    try {
+        const user = await User.findOne({ refreshToken: refreshToken })
+        if (user) {
+            await User.updateOne(
+                { refreshToken: user.refreshToken },
+                { $set: { refreshToken: "" } }
+            )
+        }
+
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+        })
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+        })
+        return res.status(200).send({
+            status: "success",
+            message: "Logged out successfully"
+        })
+    } catch (error) {
+        return res.status(500).send({
+            status: "failed",
+            message: "Something went wrong"
         })
     }
 }
